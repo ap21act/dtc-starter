@@ -16,6 +16,11 @@ export const listRegions = async () => {
       cache: "force-cache",
     })
     .then(({ regions }) => regions)
+    .catch(() => {
+      // Backend may be unavailable in local preview. Return an empty list so
+      // pages can render their empty/fallback state instead of crashing.
+      return [] as HttpTypes.StoreRegion[]
+    })
 }
 
 export const retrieveRegion = async (id: string) => {

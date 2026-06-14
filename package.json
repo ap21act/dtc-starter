@@ -6,7 +6,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "pnpm -r dev",
+    "dev": "pnpm --filter @dtc/storefront dev",
     "build": "pnpm -r build",
     "start": "turbo start",
     "lint": "turbo lint",
@@ -26,11 +26,5 @@
   "devDependencies": {
     "turbo": "^2.0.14",
     "prettier": "^3.2.5"
-  },
-  
-  "workspaces": [
-    "apps/*"
-  ]
- 
-  
+  }
 }

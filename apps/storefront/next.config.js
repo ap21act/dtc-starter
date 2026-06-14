@@ -13,6 +13,11 @@ const S3_PATHNAME = process.env.MEDUSA_CLOUD_S3_PATHNAME
  */
 const nextConfig = {
   reactStrictMode: true,
+  // Pin the Turbopack root to the monorepo root to avoid ambiguity from
+  // multiple lockfiles while still resolving the hoisted Next.js package.
+  turbopack: {
+    root: require("path").join(__dirname, "..", ".."),
+  },
   logging: {
     fetches: {
       fullUrl: true,

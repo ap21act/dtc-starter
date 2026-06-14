@@ -40,6 +40,11 @@ export const listCollections = async (
       }
     )
     .then(({ collections }) => ({ collections, count: collections.length }))
+    .catch(() => {
+      // Backend may be unavailable in local preview. Return an empty list so
+      // pages can render their empty/fallback state instead of crashing.
+      return { collections: [] as HttpTypes.StoreCollection[], count: 0 }
+    })
 }
 
 export const getCollectionByHandle = async (
