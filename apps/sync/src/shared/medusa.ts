@@ -241,6 +241,27 @@ class MedusaClient {
       logger.warn(`Stock update skipped for ${sku}: ${err.message}`)
     }
   }
+
+  async updatePrice(sku: string, pricePence: number) {
+    try {
+      // Find variant by SKU
+      const varRes = await this.http.get(
+        `/admin/variants?sku=${encodeURIComponent(sku)}&fields=id,product_id`
+      )
+      const variant = varRes.data?.variants?.[0]
+      if (!variant) {
+        logger.warn(`Variant not found for SKU: ${sku}`)
+        return
+      }
+
+      // Update variant prices (GBP currency)
+      await this.http.post(`/admin/variants/${variant.id}`, {
+        prices: [{ currency_code: 'gbp', amount: pricePence }]
+      })
+    } catch (err: any) {
+      logger.warn(`Price update skipped for ${sku}: ${err.message}`)
+    }
+  }
 }
 
 let _client: MedusaClient | null = null

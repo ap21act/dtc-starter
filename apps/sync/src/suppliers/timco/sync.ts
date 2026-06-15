@@ -16,16 +16,21 @@ const UPSERT_CONCURRENCY = 5
 // Log progress every N products
 const LOG_EVERY = 200
 
-export async function syncTimco() {
+/**
+ * FULL CATALOG SYNC - Run once on startup or manually
+ * Fetches ALL products with complete details (attributes, images, pricing)
+ * and stores them in Medusa database
+ */
+export async function syncTimcoFullCatalog() {
   const username = process.env.TIMCO_USERNAME
   const password = process.env.TIMCO_PASSWORD
 
   if (!username || !password) {
-    logger.warn('TIMCO_USERNAME or TIMCO_PASSWORD not set — skipping TIMCO sync')
+    logger.warn('TIMCO_USERNAME or TIMCO_PASSWORD not set — skipping TIMCO full sync')
     return
   }
 
-  logger.info('=== TIMCO sync started ===')
+  logger.info('=== TIMCO FULL CATALOG SYNC started ===')
   const start = Date.now()
 
   const client = new TimcoClient(username, password)
@@ -145,6 +150,83 @@ export async function syncTimco() {
 
   const elapsed = ((Date.now() - start) / 1000).toFixed(1)
   logger.info(
-    `=== TIMCO sync complete in ${elapsed}s — created: ${created}, updated: ${updated}, skipped: ${skipped}, errors: ${errors} ===`
+    `=== TIMCO FULL CATALOG SYNC complete in ${elapsed}s — created: ${created}, updated: ${updated}, skipped: ${skipped}, errors: ${errors} ===`
   )
+}
+
+/**
+ * LIGHTWEIGHT PRICE & STOCK UPDATE - Run every 10 minutes
+ * Fetches ONLY pricing and stock data, updates existing products
+ * Much faster than full sync (2 API calls total)
+ */
+export async function syncTimcoPriceAndStock() {
+  const username = process.env.TIMCO_USERNAME
+  const password = process.env.TIMCO_PASSWORD
+
+  if (!username || !password) {
+    logger.warn('TIMCO_USERNAME or TIMCO_PASSWORD not set — skipping TIMCO price/stock sync')
+    return
+  }
+
+  logger.info('=== TIMCO PRICE & STOCK UPDATE started ===')
+  const start = Date.now()
+
+  const client = new TimcoClient(username, password)
+  const medusa = getMedusaClient()
+
+  try {
+    // Lightweight bulk fetch - only 2 API calls
+    const [allProducts, allStock] = await Promise.all([
+      client.getProducts(),
+      client.getAllStock(),
+    ])
+
+    logger.info(`Fetched pricing for ${allProducts.length} products, ${allStock.length} stock records`)
+
+    const stockMap = client.buildStockMap(allStock)
+
+    let priceUpdates = 0
+    let stockUpdates = 0
+    let errors = 0
+
+    // Process in batches to avoid hammering the API
+    for (let i = 0; i < allProducts.length; i += UPSERT_CONCURRENCY) {
+      const chunk = allProducts.slice(i, i + UPSERT_CONCURRENCY)
+
+      await Promise.all(
+        chunk.map(async (product) => {
+          try {
+            const medusaId = getMedusaId(SUPPLIER, product.sku)
+            if (!medusaId) return // Product hasn't been synced yet
+
+            // Fetch pricing
+            const pricing = await client.getPricing(product.sku)
+            if (pricing?.discountedPrice) {
+              const markup = parseFloat(process.env.TIMCO_MARKUP_MULTIPLIER || '1.4')
+              const retailPence = Math.round(pricing.discountedPrice * markup * 100)
+              await medusa.updatePrice(product.sku, retailPence)
+              priceUpdates++
+            }
+
+            // Update stock
+            const stockEntry = stockMap.get(product.sku)
+            if (stockEntry?.currentStock !== undefined) {
+              await medusa.updateStock(medusaId, product.sku, stockEntry.currentStock)
+              stockUpdates++
+            }
+          } catch (err: any) {
+            logger.warn(`Failed to update ${product.sku}: ${err.message}`)
+            errors++
+          }
+        })
+      )
+    }
+
+    const elapsed = ((Date.now() - start) / 1000).toFixed(1)
+    logger.info(
+      `=== TIMCO PRICE & STOCK UPDATE complete in ${elapsed}s — price updates: ${priceUpdates}, stock updates: ${stockUpdates}, errors: ${errors} ===`
+    )
+  } catch (err: any) {
+    logger.error('TIMCO price/stock sync failed:', err.message)
+  }
 }
