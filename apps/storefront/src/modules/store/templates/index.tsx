@@ -1,5 +1,5 @@
 import { listCollections } from "@lib/data/collections"
-import { listProductsWithSort } from "@lib/data/products"
+import { listProducts } from "@lib/data/products"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import StoreWithFilters from "./store-with-filters"
@@ -41,12 +41,14 @@ const StoreTemplate = async ({
   // Fetch products with search/sorting
   let products: HttpTypes.StoreProduct[] = []
   try {
-    const response = await listProductsWithSort({
-      sortBy: sort,
-      limit: 1000,
-      search: search ? decodeURIComponent(search) : undefined,
+    const result = await listProducts({
+      countryCode,
+      queryParams: {
+        limit: 100,
+        ...(search && { q: String(search) }),
+      },
     })
-    products = response.products || []
+    products = result.response.products || []
   } catch (error) {
     console.error("Failed to fetch products:", error)
     products = []
@@ -56,8 +58,8 @@ const StoreTemplate = async ({
   let pageDesc = ""
 
   if (search) {
-    pageTitle = `Search: "${decodeURIComponent(search)}"`
-    pageDesc = `Results for "${decodeURIComponent(search)}"`
+    pageTitle = `Search: "${search}"`
+    pageDesc = `Results for "${search}"`
   } else if (collectionId || categoryId) {
     pageDesc = `Browse our full range of ${pageTitle.toLowerCase()} — professional grade, ready for UK delivery.`
   } else {
