@@ -1,5 +1,6 @@
-import { Github } from "@medusajs/icons";
-import { Button, Heading } from "@modules/common/components/ui";
+import { Button, Heading, Text } from "@modules/common/components/ui"
+import LocalizedClientLink from "@modules/common/components/localized-client-link"
+
 const Hero = () => {
   return (
     <div className="h-[75vh] w-full border-b border-ui-border-base relative bg-ui-bg-subtle">
@@ -9,23 +10,29 @@ const Hero = () => {
             level="h1"
             className="text-3xl leading-10 text-ui-fg-base font-normal"
           >
-            Ecommerce Starter Template
+            Kingsbury Builders Merchant
           </Heading>
           <Heading
             level="h2"
             className="text-3xl leading-10 text-ui-fg-subtle font-normal"
           >
-            Powered by Medusa and Next.js
+            Tools, fixings &amp; building materials
           </Heading>
         </span>
-        <a href="https://github.com/medusajs/dtc-starter" target="_blank">
-          <Button variant="secondary">
-            View on GitHub <Github />
-          </Button>
-        </a>
+        <Text className="text-ui-fg-subtle">
+          Trade &amp; retail supply — delivered across the UK
+        </Text>
+        <div className="flex gap-3">
+          <LocalizedClientLink href="/store">
+            <Button variant="primary">Shop All Products</Button>
+          </LocalizedClientLink>
+          <LocalizedClientLink href="/categories">
+            <Button variant="secondary">Browse Categories</Button>
+          </LocalizedClientLink>
+        </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Hero;
+export default Hero

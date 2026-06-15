@@ -1,9 +1,5 @@
-import repeat from "@lib/util/repeat"
 import { HttpTypes } from "@medusajs/types"
-import { Heading, Table } from "@modules/common/components/ui"
-
 import Item from "@modules/cart/components/item"
-import SkeletonLineItem from "@modules/skeletons/components/skeleton-line-item"
 
 type ItemsTemplateProps = {
   cart?: HttpTypes.StoreCart
@@ -11,45 +7,72 @@ type ItemsTemplateProps = {
 
 const ItemsTemplate = ({ cart }: ItemsTemplateProps) => {
   const items = cart?.items
-  return (
-    <div>
-      <div className="pb-3 flex items-center">
-        <Heading className="text-[2rem] leading-[2.75rem]">Cart</Heading>
+  const currency = cart?.currency_code ?? "gbp"
+
+  if (!items?.length) {
+    return (
+      <div className="text-center py-12">
+        <span className="material-symbols-outlined text-5xl text-grey-30 block mb-4">shopping_cart</span>
+        <p className="text-lg text-on-surface-variant">Your cart is empty</p>
       </div>
-      <Table>
-        <Table.Header className="border-t-0">
-          <Table.Row className="text-ui-fg-subtle txt-medium-plus">
-            <Table.HeaderCell className="!pl-0">Item</Table.HeaderCell>
-            <Table.HeaderCell></Table.HeaderCell>
-            <Table.HeaderCell>Quantity</Table.HeaderCell>
-            <Table.HeaderCell className="hidden small:table-cell">
-              Price
-            </Table.HeaderCell>
-            <Table.HeaderCell className="!pr-0 text-right">
-              Total
-            </Table.HeaderCell>
-          </Table.Row>
-        </Table.Header>
-        <Table.Body>
-          {items
-            ? items
-                .sort((a, b) => {
-                  return (a.created_at ?? "") > (b.created_at ?? "") ? -1 : 1
-                })
-                .map((item) => {
-                  return (
-                    <Item
-                      key={item.id}
-                      item={item}
-                      currencyCode={cart?.currency_code}
-                    />
-                  )
-                })
-            : repeat(5).map((i) => {
-                return <SkeletonLineItem key={i} />
-              })}
-        </Table.Body>
-      </Table>
+    )
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Delivery banner */}
+      <div className="bg-green-50 border border-green-300/50 p-4 flex items-center gap-3">
+        <span className="material-symbols-outlined text-green-700" style={{ fontSize: 20 }}>local_shipping</span>
+        <p className="text-sm font-medium text-green-700">
+          You've qualified for <span className="font-bold">FREE Next Day UK Delivery</span> on this order!
+        </p>
+      </div>
+
+      {/* Desktop headers */}
+      <div className="hidden md:grid grid-cols-12 gap-4 px-4 pb-2 border-b border-border font-label-md text-on-surface-variant text-xs uppercase">
+        <div className="col-span-6">Product</div>
+        <div className="col-span-2 text-center">Price</div>
+        <div className="col-span-2 text-center">Quantity</div>
+        <div className="col-span-2 text-right">Total</div>
+      </div>
+
+      {/* Items */}
+      <div className="space-y-5">
+        {items
+          .sort((a, b) => ((b.created_at ?? "") > (a.created_at ?? "") ? 1 : -1))
+          .map((item) => (
+            <Item key={item.id} item={item} currencyCode={currency} />
+          ))}
+      </div>
+
+      {/* Trust badges */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-8">
+        {[
+          { icon: "receipt_long", label: "VAT Invoices Available" },
+          { icon: "verified_user", label: "Secure Payments" },
+          { icon: "local_shipping", label: "UK Wide Delivery" },
+          { icon: "settings_backup_restore", label: "30-Day Returns" },
+        ].map((b) => (
+          <div key={b.label} className="flex flex-col items-center text-center p-4 bg-surface border border-border">
+            <span className="material-symbols-outlined text-navy mb-2 text-3xl">{b.icon}</span>
+            <span className="text-xs font-bold uppercase tracking-tight">{b.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Bulk ordering CTA */}
+      <div className="flex justify-between items-center bg-surface-container-low p-6 border border-border">
+        <div className="flex items-center gap-4">
+          <span className="material-symbols-outlined text-navy text-3xl">request_quote</span>
+          <div>
+            <p className="font-bold text-navy uppercase">Ordering in volume?</p>
+            <p className="text-sm text-on-surface-variant">We offer exclusive rates for bulk orders and project supplies.</p>
+          </div>
+        </div>
+        <a href="#" className="text-secondary-container font-bold underline underline-offset-4 uppercase text-sm hover:text-secondary-fixed-dim transition-colors whitespace-nowrap ml-4">
+          Request a quote
+        </a>
+      </div>
     </div>
   )
 }

@@ -14,6 +14,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - medusa_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d medusa-store"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   # Redis
   redis:
@@ -33,8 +38,10 @@ services:
     container_name: medusa_backend
     restart: unless-stopped
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     ports:
       - "9000:9000"
       - "5173:5173"
@@ -75,8 +82,42 @@ services:
     networks:
       - medusa_network
 
+  # Product Sync Service
+  # Runs immediately on startup then every hour.
+  # TIMCO: complete. FTP supplier: wired up once Excel docs are shared.
+  sync:
+    build: .
+    container_name: medusa_sync
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      medusa:
+        condition: service_started
+    environment:
+      - TIMCO_BASE_URL=https://timcoproductapi.azurewebsites.net
+      - TIMCO_USERNAME=${TIMCO_USERNAME}
+      - TIMCO_PASSWORD=${TIMCO_PASSWORD}
+      - TIMCO_MARKUP_MULTIPLIER=${TIMCO_MARKUP_MULTIPLIER:-1.4}
+      - FTP_HOST=${FTP_HOST}
+      - FTP_USERNAME=${FTP_USERNAME}
+      - FTP_PASSWORD=${FTP_PASSWORD}
+      - MEDUSA_BACKEND_URL=http://medusa:9000
+      - MEDUSA_ADMIN_EMAIL=${MEDUSA_ADMIN_EMAIL}
+      - MEDUSA_ADMIN_PASSWORD=${MEDUSA_ADMIN_PASSWORD}
+      - SYNC_STATE_PATH=/server/data/sync-state.json
+    volumes:
+      - .:/server
+      - /server/node_modules
+      - /server/apps/sync/node_modules
+      - sync_data:/server/data
+    entrypoint: ["./start-sync.sh"]
+    networks:
+      - medusa_network
+
 volumes:
   postgres_data:
+  sync_data:
 
 networks:
   medusa_network:

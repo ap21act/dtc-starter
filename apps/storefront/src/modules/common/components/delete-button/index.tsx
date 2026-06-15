@@ -1,6 +1,6 @@
+"use client"
+
 import { deleteLineItem } from "@lib/data/cart"
-import { Spinner, Trash } from "@medusajs/icons"
-import { clx } from "@modules/common/components/ui"
 import { useState } from "react"
 
 const DeleteButton = ({
@@ -14,28 +14,38 @@ const DeleteButton = ({
 }) => {
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async () => {
     setIsDeleting(true)
-    await deleteLineItem(id).catch((_err) => {
+    try {
+      await deleteLineItem(id)
+    } catch (err) {
+      console.error("Failed to delete item:", err)
       setIsDeleting(false)
-    })
+    }
   }
 
   return (
-    <div
-      className={clx(
-        "flex items-center justify-between text-small-regular",
-        className
-      )}
+    <button
+      className={`flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${className || ""}`}
+      onClick={handleDelete}
+      disabled={isDeleting}
     >
-      <button
-        className="flex gap-x-1 text-ui-fg-subtle hover:text-ui-fg-base cursor-pointer"
-        onClick={() => handleDelete(id)}
-      >
-        {isDeleting ? <Spinner className="animate-spin" /> : <Trash />}
-        <span>{children}</span>
-      </button>
-    </div>
+      {isDeleting ? (
+        <>
+          <span className="material-symbols-outlined animate-spin" style={{ fontSize: 14 }}>
+            hourglass_empty
+          </span>
+          Removing...
+        </>
+      ) : (
+        <>
+          <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
+            delete
+          </span>
+          {children}
+        </>
+      )}
+    </button>
   )
 }
 

@@ -237,6 +237,22 @@ export async function setShippingMethod({
     .catch(medusaError)
 }
 
+export async function updateShippingMethod(shippingMethodId: string) {
+  "use server"
+  const cartId = await getCartId()
+  if (!cartId) throw new Error("No cart found")
+
+  const headers = { ...(await getAuthHeaders()) }
+
+  await sdk.store.cart
+    .addShippingMethod(cartId, { option_id: shippingMethodId }, {}, headers)
+    .then(async () => {
+      const cartCacheTag = await getCacheTag("carts")
+      revalidateTag(cartCacheTag)
+    })
+    .catch(medusaError)
+}
+
 export async function initiatePaymentSession(
   cart: HttpTypes.StoreCart,
   data: HttpTypes.StoreInitializePaymentSession
