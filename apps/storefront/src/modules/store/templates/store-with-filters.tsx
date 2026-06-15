@@ -19,6 +19,8 @@ export default function StoreWithFilters({
   sortBy,
   page: initialPage,
   region,
+  collectionId,
+  categoryId,
 }: {
   products: HttpTypes.StoreProduct[]
   collectionChips: { id: string; title: string; handle: string }[]
@@ -28,6 +30,8 @@ export default function StoreWithFilters({
   sortBy?: string
   page?: number
   region: HttpTypes.StoreRegion
+  collectionId?: string
+  categoryId?: string
 }) {
   const [filteredProducts, setFilteredProducts] = useState(products)
   const [currentPage, setCurrentPage] = useState(initialPage || 1)
@@ -52,7 +56,19 @@ export default function StoreWithFilters({
         <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
           chevron_right
         </span>
-        <span className="text-navy font-bold">{pageTitle}</span>
+        {collectionId || categoryId || search ? (
+          <>
+            <LocalizedClientLink href="/store" className="hover:text-navy transition-colors">
+              All Products
+            </LocalizedClientLink>
+            <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
+              chevron_right
+            </span>
+            <span className="text-navy font-bold">{pageTitle}</span>
+          </>
+        ) : (
+          <span className="text-navy font-bold">All Products</span>
+        )}
       </nav>
 
       {/* Page header */}
@@ -74,13 +90,28 @@ export default function StoreWithFilters({
       {collectionChips && collectionChips.length > 0 && !search && (
         <div className="flex flex-wrap gap-3 mb-10">
           <LocalizedClientLink href="/store">
-            <button className="px-5 py-2.5 border text-sm font-medium transition-colors border-border bg-surface hover:border-safety-orange text-on-surface">
-              All Products
+            <button
+              className={`px-5 py-2.5 border text-sm font-medium transition-colors flex items-center gap-2 ${
+                !collectionId && !categoryId
+                  ? "border-safety-orange bg-orange-50 text-navy"
+                  : "border-border bg-surface hover:border-safety-orange text-on-surface"
+              }`}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+                apps
+              </span>
+              All
             </button>
           </LocalizedClientLink>
           {collectionChips.map((c) => (
             <LocalizedClientLink key={c.id} href={`/collections/${c.handle}`}>
-              <button className="px-5 py-2.5 border text-sm font-medium transition-colors border-border bg-surface hover:border-safety-orange text-on-surface">
+              <button
+                className={`px-5 py-2.5 border text-sm font-medium transition-colors ${
+                  collectionId === c.id
+                    ? "border-safety-orange bg-orange-50 text-navy"
+                    : "border-border bg-surface hover:border-safety-orange text-on-surface"
+                }`}
+              >
                 {c.title}
               </button>
             </LocalizedClientLink>
